@@ -61,14 +61,17 @@
             { id: 4, name: "FATIN NUR SADIAH", shortName: "FATIN" },
         ];
         
+        const JABATAN_LIST = ["VIDEOGRAPHER CUM EDITOR", "GRAPHIC DESIGN", "VIDEOGRAPHER CUM GRAPHIC", "CONTENT CREATOR"];
+        
         const TIKTOK_ACCOUNTS = ["@miragoldkotamasai", "@kedaiemasmiragold", "@emasmiragold"];
         
-        const CONTENT_TYPES = ["AWARENESS", "TESTIMONI", "PROMO", "BTS LIVE", "VIDEO PRODUCT", "BEG KUNING", "GAMBAR PRODUCT"];
+        const CONTENT_TYPES = ["AWARENESS", "TESTIMONI", "PROMO", "BTS LIVE", "VIDEO PRODUCT", "BEG KUNING", "GAMBAR PRODUCT", "HARDSALE", "PROMO HARDSALE"];
+        const LOCAL_STORAGE_KEY = 'tiktokReportDraft';
 
         // --- TYPE DEFINITIONS (for clarity) ---
         // interface Aktiviti { id: number; time: string; content: string; type: string; uploaded: boolean; }
         // interface Posting { id: number; time: string; content: string; type: string; uploaded: boolean; link: string; }
-        // interface ReportData { staffName: string; reportDate: string; tiktokAccount: string; aktivitiList: Aktiviti[]; postingList: Posting[]; notaList: string[]; }
+        // interface ReportData { staffName: string; jabatan: string; reportDate: string; tiktokAccount: string; aktivitiList: Aktiviti[]; postingList: Posting[]; notaList: string[]; }
 
         // --- ICON COMPONENTS ---
         const PlusIcon = () => (
@@ -83,8 +86,6 @@
             </svg>
         );
         
-        const LinkIcon = () => '🔗';
-
         // --- HELPER FUNCTIONS ---
         const formatTime12Hour = (time24) => {
             if (!time24) return '';
@@ -108,12 +109,7 @@
             doc.setFontSize(20);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(40, 40, 40);
-            doc.text("Laporan Harian Konten TikTok", pageWidth / 2, 22, { align: 'center' });
-            
-            doc.setFontSize(12);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(100, 100, 100);
-            doc.text("credit by TEAM MEDIA", pageWidth / 2, 30, { align: 'center' });
+            doc.text("Laporan Harian Konten TikTok", pageWidth / 2, 25, { align: 'center' });
             
             // Report Info Section
             const formattedDateForDisplay = new Date(reportData.reportDate + 'T00:00:00').toLocaleDateString('en-GB', {
@@ -121,22 +117,25 @@
             }).toUpperCase();
 
             const reportInfoBody = [
-                ['Nama Staf:', reportData.staffName],
-                ['Akaun TikTok:', reportData.tiktokAccount],
-                ['Tarikh Laporan:', formattedDateForDisplay],
+                ['Nama Staf', reportData.staffName],
+                ['Jawatan', reportData.jabatan],
+                ['Akaun TikTok', reportData.tiktokAccount],
+                ['Tarikh Laporan', formattedDateForDisplay],
             ];
 
             doc.autoTable({
-                startY: 40,
+                startY: 35,
                 body: reportInfoBody,
-                theme: 'plain',
+                theme: 'grid', // Use 'grid' theme for a boxed look
                 styles: {
                     font: 'helvetica',
-                    fontSize: 11,
-                    cellPadding: 1,
+                    fontSize: 9, // Minimalist font size
+                    cellPadding: 2,
+                    lineColor: [220, 220, 220], // Light grey for subtle borders
+                    lineWidth: 0.1,
                 },
                 columnStyles: {
-                    0: { fontStyle: 'bold', cellWidth: 40 },
+                    0: { fontStyle: 'bold', cellWidth: 35 }, // Adjusted width
                     1: { cellWidth: 'auto' },
                 },
                 tableWidth: 'wrap',
@@ -146,18 +145,24 @@
             finalY = doc.autoTable.previous.finalY;
 
             // Aktiviti Konten Table
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text("Aktiviti Konten", 14, finalY + 12);
+
             if (reportData.aktivitiList.length > 0) {
                  doc.autoTable({
-                    startY: finalY + 10,
+                    startY: finalY + 15,
                     head: [['MASA', 'KANDUNGAN', 'JENIS', 'STATUS UPLOAD TELEGRAM']],
                     body: reportData.aktivitiList.map(item => [formatTime12Hour(item.time), item.content, item.type, item.uploaded ? '✓ UPLOAD' : '✗ PENDING']),
                     theme: 'striped',
                     headStyles: {
-                        fillColor: [44, 62, 80], // Dark Slate
+                        fillColor: [8, 145, 178], // Cyan-600
                         textColor: [255, 255, 255],
                         fontStyle: 'bold',
-                        halign: 'center'
+                        halign: 'center',
+                        fontSize: 10,
                     },
+                    styles: { fontSize: 9 },
                     columnStyles: {
                         0: { cellWidth: 30, halign: 'center' },
                         1: { cellWidth: 'auto', halign: 'left' },
@@ -182,24 +187,32 @@
                     }
                 });
             } else {
-                 doc.text("Tiada Aktiviti Konten direkodkan.", 14, finalY + 15);
-                 doc.autoTable({ startY: finalY + 20 }); // To get finalY position
+                 doc.setFont("helvetica", "normal");
+                 doc.setFontSize(10);
+                 doc.text("Tiada Aktiviti Konten direkodkan.", 14, finalY + 20);
+                 doc.autoTable({ startY: finalY + 25 }); // To get finalY position
             }
 
             finalY = doc.autoTable.previous.finalY;
 
             // Posting TikTok Table
+            doc.setFontSize(12);
+            doc.setFont("helvetica", "bold");
+            doc.text(`Posting TikTok ${reportData.tiktokAccount}`, 14, finalY + 12);
+
             doc.autoTable({
                 startY: finalY + 15,
                 head: [['MASA', 'KANDUNGAN', 'JENIS', 'STATUS UPLOAD TIKTOK', 'LINK']],
                 body: reportData.postingList.map(item => [formatTime12Hour(item.time), item.content, item.type, item.uploaded ? '✓ UPLOAD' : '✗ PENDING', item.link]),
                 theme: 'striped',
                 headStyles: {
-                    fillColor: [44, 62, 80], // Dark Slate
+                    fillColor: [8, 145, 178], // Cyan-600
                     textColor: [255, 255, 255],
                     fontStyle: 'bold',
-                    halign: 'center'
+                    halign: 'center',
+                    fontSize: 10,
                 },
+                styles: { fontSize: 9 },
                 columnStyles: {
                     0: { cellWidth: 30, halign: 'center' },
                     1: { cellWidth: 'auto', halign: 'left' },
@@ -218,9 +231,9 @@
                         doc.text(data.cell.raw, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 3, { align: 'center' });
                     }
                     if (data.section === 'body' && data.column.index === 4 && data.cell.raw) {
-                        doc.setFontSize(12);
-                        doc.setTextColor(43, 80, 218); // link color
-                        doc.textWithLink(LinkIcon(), data.cell.x + (data.cell.width/2) - 2, data.cell.y + data.cell.height / 2 + 3, { url: data.cell.raw });
+                        doc.setFontSize(9);
+                        doc.setTextColor(14, 116, 144); // Cyan-700 link color
+                        doc.textWithLink('Link', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 3, { url: data.cell.raw, align: 'center' });
                     }
                 },
                 didParseCell: function (data) {
@@ -279,6 +292,7 @@
             // --- STATE MANAGEMENT ---
             const [reportData, setReportData] = useState({
                 staffName: STAFF_LIST[0].name,
+                jabatan: JABATAN_LIST[0],
                 reportDate: today,
                 tiktokAccount: TIKTOK_ACCOUNTS[0],
                 aktivitiList: [],
@@ -290,11 +304,59 @@
             const [newPosting, setNewPosting] = useState({ time: '', content: '', type: '', uploaded: true, link: '' });
             const [newNota, setNewNota] = useState('');
             const [isLoading, setIsLoading] = useState(false);
+            const [draftExists, setDraftExists] = useState(false);
+
+            // --- EFFECTS for AUTO-SAVE and DRAFT CHECK ---
+
+            // Check for a saved draft when the component mounts
+            useEffect(() => {
+                const savedDraft = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (savedDraft) {
+                    setDraftExists(true);
+                }
+            }, []);
+
+            // Auto-save report data to localStorage whenever it changes (with debounce)
+            useEffect(() => {
+                const handler = setTimeout(() => {
+                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(reportData));
+                    setDraftExists(true);
+                }, 1000); // Debounce time: 1 second
+
+                return () => {
+                    clearTimeout(handler);
+                };
+            }, [reportData]);
+
 
             // --- HANDLER FUNCTIONS ---
 
+            const handleLoadDraft = () => {
+                const savedDraft = localStorage.getItem(LOCAL_STORAGE_KEY);
+                if (savedDraft) {
+                    if (window.confirm('Anda pasti mahu memuatkan draf terakhir? Ini akan menulis ganti sebarang perubahan semasa.')) {
+                        setReportData(JSON.parse(savedDraft));
+                        alert('Draf berjaya dimuatkan!');
+                    }
+                } else {
+                    alert('Tiada draf yang disimpan dijumpai.');
+                }
+            };
+
+            const handleClearDraft = () => {
+                if (window.confirm('Anda pasti mahu memadam draf yang disimpan? Tindakan ini tidak boleh dibuat asal.')) {
+                    localStorage.removeItem(LOCAL_STORAGE_KEY);
+                    setDraftExists(false);
+                    alert('Draf dipadam.');
+                }
+            };
+
             const handleStaffChange = (e) => {
                 setReportData(prev => ({ ...prev, staffName: e.target.value }));
+            };
+            
+            const handleJabatanChange = (e) => {
+                setReportData(prev => ({ ...prev, jabatan: e.target.value }));
             };
 
             const handleAccountChange = (e) => {
@@ -387,42 +449,58 @@
 
             // --- JSX STRUCTURE ---
             return (
-                <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8">
+                <div className="min-h-screen bg-cyan-50 p-4 sm:p-6 lg:p-8">
                     <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6 sm:p-8">
                         
                         {/* Header */}
-                        <div className="text-center mb-8">
+                        <div className="text-center mb-8 relative">
                             <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Laporan Harian Konten TikTok</h1>
                             <p className="text-sm text-gray-500 mt-1">credit by TEAM MEDIA</p>
+                            {draftExists && (
+                                <div className="absolute top-0 right-0 flex items-center gap-2">
+                                     <button onClick={handleLoadDraft} className="bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full hover:bg-blue-200 transition">
+                                         Muat Draf Terakhir
+                                     </button>
+                                     <button onClick={handleClearDraft} title="Padam Draf" className="text-gray-400 hover:text-red-500">
+                                         <TrashIcon />
+                                     </button>
+                                </div>
+                            )}
                         </div>
                         
                         {/* Staff & Date Section */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 border-t border-gray-200 pt-8">
-                            <div className="lg:col-span-1">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 border-t border-gray-200 pt-8">
+                            <div>
                                 <label htmlFor="staff" className="block text-sm font-medium text-gray-700 mb-1">Nama Staf</label>
-                                <select id="staff" value={reportData.staffName} onChange={handleStaffChange} className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                <select id="staff" value={reportData.staffName} onChange={handleStaffChange} className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500">
                                     {STAFF_LIST.map(staff => <option key={staff.id} value={staff.name}>{staff.name}</option>)}
                                 </select>
                             </div>
-                            <div className="lg:col-span-1">
+                            <div>
+                                <label htmlFor="jabatan" className="block text-sm font-medium text-gray-700 mb-1">Jawatan</label>
+                                <select id="jabatan" value={reportData.jabatan} onChange={handleJabatanChange} className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500">
+                                    {JABATAN_LIST.map(jabatan => <option key={jabatan} value={jabatan}>{jabatan}</option>)}
+                                </select>
+                            </div>
+                            <div>
                                 <label htmlFor="tiktok-account" className="block text-sm font-medium text-gray-700 mb-1">Akaun TikTok</label>
-                                <select id="tiktok-account" value={reportData.tiktokAccount} onChange={handleAccountChange} className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500">
+                                <select id="tiktok-account" value={reportData.tiktokAccount} onChange={handleAccountChange} className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500">
                                     {TIKTOK_ACCOUNTS.map(acc => <option key={acc} value={acc}>{acc}</option>)}
                                 </select>
                             </div>
-                            <div className="lg:col-span-1">
+                            <div>
                                 <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">Tarikh Laporan</label>
-                                <input type="date" id="date" value={reportData.reportDate} onChange={e => setReportData(prev => ({...prev, reportDate: e.target.value}))} className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500"/>
+                                <input type="date" id="date" value={reportData.reportDate} onChange={e => setReportData(prev => ({...prev, reportDate: e.target.value}))} className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"/>
                             </div>
                         </div>
                         
                         {/* Aktiviti Konten Section */}
-                        <Section title="Aktiviti Konten 📝">
+                        <Section title="Aktiviti Konten">
                             <form onSubmit={handleAddAktiviti} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end mb-4 p-4 bg-gray-50 rounded-lg">
                                 <Input label="Masa" type="time" value={newAktiviti.time} onChange={e => setNewAktiviti({...newAktiviti, time: e.target.value})} required/>
                                 <Input label="Kandungan" value={newAktiviti.content} onChange={e => setNewAktiviti({...newAktiviti, content: e.target.value})} required className="sm:col-span-2"/>
                                 <Select label="Jenis" value={newAktiviti.type} onChange={e => setNewAktiviti({...newAktiviti, type: e.target.value})} options={CONTENT_TYPES} required/>
-                                <button type="submit" className="sm:col-start-4 flex justify-center items-center gap-2 w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition duration-200">
+                                <button type="submit" className="sm:col-start-4 flex justify-center items-center gap-2 w-full bg-cyan-600 text-white p-2 rounded-md hover:bg-cyan-700 transition duration-200">
                                     <PlusIcon /> Add Aktiviti
                                 </button>
                             </form>
@@ -436,7 +514,7 @@
                                 <Input label="Kandungan" value={newPosting.content} onChange={e => setNewPosting({...newPosting, content: e.target.value})} required className="sm:col-span-2"/>
                                 <Select label="Jenis" value={newPosting.type} onChange={e => setNewPosting({...newPosting, type: e.target.value})} options={CONTENT_TYPES} required/>
                                 <Input label="Link" value={newPosting.link} onChange={e => setNewPosting({...newPosting, link: e.target.value})} placeholder="https://tiktok.com/..."/>
-                                <button type="submit" className="sm:col-start-6 flex justify-center items-center gap-2 w-full bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition duration-200">
+                                <button type="submit" className="sm:col-start-6 flex justify-center items-center gap-2 w-full bg-cyan-600 text-white p-2 rounded-md hover:bg-cyan-700 transition duration-200">
                                     <PlusIcon /> Add Posting
                                 </button>
                             </form>
@@ -444,10 +522,10 @@
                         </Section>
 
                         {/* Nota Section */}
-                        <Section title="Nota Tambahan 📌">
+                        <Section title="Nota Tambahan">
                             <form onSubmit={handleAddNota} className="flex gap-4 items-center mb-4 p-4 bg-gray-50 rounded-lg">
                                 <Input label="Nota" value={newNota} onChange={e => setNewNota(e.target.value)} className="flex-grow" noLabel/>
-                                <button type="submit" className="flex-shrink-0 bg-blue-600 text-white p-2 rounded-md hover:bg-blue-700 transition duration-200">
+                                <button type="submit" className="flex-shrink-0 bg-cyan-600 text-white p-2 rounded-md hover:bg-cyan-700 transition duration-200">
                                     <PlusIcon />
                                 </button>
                             </form>
@@ -463,7 +541,7 @@
 
                         {/* Generate PDF Button */}
                         <div className="mt-10 text-center">
-                            <button onClick={handleGeneratePdf} disabled={isLoading} className="w-full md:w-1/2 bg-amber-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-amber-600 transition duration-300 transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100">
+                            <button onClick={handleGeneratePdf} disabled={isLoading} className="w-full md:w-1/2 bg-cyan-500 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:bg-cyan-600 transition duration-300 transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100">
                                 {isLoading ? 'Menjana PDF...' : 'Generate PDF Report'}
                             </button>
                         </div>
@@ -477,7 +555,7 @@
 
         const Section = ({ title, children }) => (
             <div className="mb-8">
-                <h3 className="text-lg font-bold text-gray-800 border-b-2 border-amber-400 pb-2 mb-4">{title}</h3>
+                <h3 className="text-lg font-bold text-gray-800 border-b-2 border-cyan-400 pb-2 mb-4">{title}</h3>
                 {children}
             </div>
         );
@@ -491,7 +569,7 @@
                     onChange={onChange}
                     required={required}
                     placeholder={placeholder}
-                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
                 />
             </div>
         );
@@ -503,7 +581,7 @@
                     value={value}
                     onChange={onChange}
                     required={required}
-                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-amber-500 focus:border-amber-500"
+                    className="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-cyan-500 focus:border-cyan-500"
                 >
                     <option value="" disabled>Pilih satu...</option>
                     {options.map(option => <option key={option} value={option}>{option}</option>)}
@@ -532,12 +610,12 @@
                                 <td className="px-4 py-2">{item.content}</td>
                                 <td className="px-4 py-2 whitespace-nowrap">{item.type}</td>
                                 <td className="px-4 py-2 text-center">
-                                    <button onClick={() => onToggleStatus(item.id)} className={`px-3 py-1 text-sm font-semibold rounded-full text-white ${item.uploaded ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>
+                                    <button onClick={() => onToggleStatus(item.id)} className={`px-3 py-1 text-sm font-semibold rounded-full w-24 text-center transition-colors ${item.uploaded ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}>
                                         {item.uploaded ? '✓ UPLOAD' : '✗ PENDING'}
                                     </button>
                                 </td>
                                 <td className="px-4 py-2 text-right">
-                                    <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-600"><TrashIcon/></button>
+                                    <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-600"><TrashIcon /></button>
                                 </td>
                             </tr>
                         ))}
@@ -555,28 +633,34 @@
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kandungan</th>
                             <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jenis</th>
                             <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status Upload</th>
-                            <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
+                            <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link</th>
                             <th className="px-4 py-2"></th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                         {data.length === 0 ? (
-                            <tr><td colSpan="6" className="text-center py-4 text-gray-500">Tiada posting ditambah.</td></tr>
+                     <tbody className="bg-white divide-y divide-gray-200">
+                        {data.length === 0 ? (
+                             <tr><td colSpan="6" className="text-center py-4 text-gray-500">Tiada posting ditambah.</td></tr>
                         ) : data.map(item => (
                             <tr key={item.id}>
                                 <td className="px-4 py-2 whitespace-nowrap">{formatTime12Hour(item.time)}</td>
                                 <td className="px-4 py-2">{item.content}</td>
                                 <td className="px-4 py-2 whitespace-nowrap">{item.type}</td>
                                 <td className="px-4 py-2 text-center">
-                                    <button onClick={() => onToggleStatus(item.id)} className={`px-3 py-1 text-sm font-semibold rounded-full text-white ${item.uploaded ? 'bg-green-500 hover:bg-green-600' : 'bg-red-500 hover:bg-red-600'}`}>
+                                    <button onClick={() => onToggleStatus(item.id)} className={`px-3 py-1 text-sm font-semibold rounded-full w-24 text-center transition-colors ${item.uploaded ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-red-100 text-red-800 hover:bg-red-200'}`}>
                                         {item.uploaded ? '✓ UPLOAD' : '✗ PENDING'}
                                     </button>
                                 </td>
-                                <td className="px-4 py-2 text-center">
-                                    {item.link && <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline text-xl">{LinkIcon()}</a>}
+                                <td className="px-4 py-2">
+                                    {item.link ? (
+                                        <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-cyan-600 hover:underline">
+                                            Lihat Link
+                                        </a>
+                                    ) : (
+                                        <span className="text-gray-400">-</span>
+                                    )}
                                 </td>
                                 <td className="px-4 py-2 text-right">
-                                    <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-600"><TrashIcon/></button>
+                                    <button onClick={() => onDelete(item.id)} className="text-gray-400 hover:text-red-600"><TrashIcon /></button>
                                 </td>
                             </tr>
                         ))}
@@ -585,9 +669,8 @@
             </div>
         );
 
-        // --- RENDER THE APP ---
-        const container = document.getElementById('root');
-        const root = ReactDOM.createRoot(container);
+        // --- RENDER APP ---
+        const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
 </body>
