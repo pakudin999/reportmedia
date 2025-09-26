@@ -1,0 +1,5 @@
+{
+  "name": "TikTok Daily Report Generator",
+  "description": "A single-file interactive web application for MIRAGOLD KOTA MASAI staff to record daily TikTok content activities and generate professional PDF reports directly from the browser.",
+  "requestFramePermissions": []
+}
