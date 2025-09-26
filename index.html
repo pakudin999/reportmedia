@@ -50,7 +50,7 @@
         // Babel will transpile it to standard JavaScript that runs in the browser.
         // All necessary libraries are loaded via CDN in the <head> section.
         
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
         const { jsPDF } = window.jspdf;
 
         // --- CONSTANTS ---
@@ -288,9 +288,7 @@
         // --- MAIN APP COMPONENT ---
         const App = () => {
             const today = new Date().toISOString().split('T')[0];
-
-            // --- STATE MANAGEMENT ---
-            const [reportData, setReportData] = useState({
+            const getInitialState = () => ({
                 staffName: STAFF_LIST[0].name,
                 jabatan: JABATAN_LIST[0],
                 reportDate: today,
@@ -300,11 +298,14 @@
                 notaList: [],
             });
 
+            // --- STATE MANAGEMENT ---
+            const [reportData, setReportData] = useState(getInitialState());
             const [newAktiviti, setNewAktiviti] = useState({ time: '', content: '', type: '', uploaded: true });
             const [newPosting, setNewPosting] = useState({ time: '', content: '', type: '', uploaded: true, link: '' });
             const [newNota, setNewNota] = useState('');
             const [isLoading, setIsLoading] = useState(false);
             const [draftExists, setDraftExists] = useState(false);
+            const isInitialMount = useRef(true);
 
             // --- EFFECTS for AUTO-SAVE and DRAFT CHECK ---
 
@@ -316,16 +317,19 @@
                 }
             }, []);
 
-            // Auto-save report data to localStorage whenever it changes (with debounce)
+            // Auto-save report data to localStorage whenever it changes
             useEffect(() => {
-                const handler = setTimeout(() => {
-                    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(reportData));
-                    setDraftExists(true);
-                }, 1000); // Debounce time: 1 second
+                // On the initial mount, we don't want to save the blank form over an existing draft.
+                // We use a ref to track the initial render and skip saving on that first run.
+                if (isInitialMount.current) {
+                    isInitialMount.current = false;
+                    return;
+                }
 
-                return () => {
-                    clearTimeout(handler);
-                };
+                // This logic now only runs AFTER the initial render. It saves instantly
+                // on every change, making it reliable even if the tab is closed quickly.
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(reportData));
+                setDraftExists(true);
             }, [reportData]);
 
 
@@ -334,9 +338,17 @@
             const handleLoadDraft = () => {
                 const savedDraft = localStorage.getItem(LOCAL_STORAGE_KEY);
                 if (savedDraft) {
-                    if (window.confirm('Anda pasti mahu memuatkan draf terakhir? Ini akan menulis ganti sebarang perubahan semasa.')) {
-                        setReportData(JSON.parse(savedDraft));
-                        alert('Draf berjaya dimuatkan!');
+                    if (window.confirm('Anda pasti mahu memuatkan draf terakhir? Sebarang perubahan semasa akan dipadam.')) {
+                        try {
+                            const parsedData = JSON.parse(savedDraft);
+                            setReportData(parsedData);
+                            alert('Draf berjaya dimuatkan!');
+                        } catch (error) {
+                            console.error("Failed to parse draft:", error);
+                            alert("Gagal memuatkan draf. Data mungkin rosak.");
+                            localStorage.removeItem(LOCAL_STORAGE_KEY);
+                            setDraftExists(false);
+                        }
                     }
                 } else {
                     alert('Tiada draf yang disimpan dijumpai.');
